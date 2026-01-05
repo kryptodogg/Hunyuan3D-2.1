@@ -687,9 +687,14 @@ class SelfAttnProcessor2_0(BaseAttnProcessor):
 
         # Device management (if needed)
         if multiple_devices:
-            device = torch.device("cuda:0") if token == "albedo" else torch.device("cuda:1")
-            for attr in [f"to_q{token_suffix}", f"to_k{token_suffix}", f"to_v{token_suffix}", f"to_out{token_suffix}"]:
-                getattr(target, attr).to(device)
+            # Check if multiple devices are actually available
+            if torch.cuda.device_count() > 1:
+                device = torch.device("cuda:0") if token == "albedo" else torch.device("cuda:1")
+                for attr in [f"to_q{token_suffix}", f"to_k{token_suffix}", f"to_v{token_suffix}", f"to_out{token_suffix}"]:
+                    getattr(target, attr).to(device)
+            else:
+                # Fallback for single device
+                pass
 
         def get_qkv(attn, hidden_states, encoder_hidden_states, **kwargs):
             return (
@@ -747,7 +752,8 @@ class SelfAttnProcessor2_0(BaseAttnProcessor):
         # Process each PBR setting
         results = []
         for token, pbr_hs in zip(self.pbr_setting, pbr_hidden_states):
-            processed_hs = rearrange(pbr_hs, "b n_pbrs n l c -> (b n_pbrs n) l c").to("cuda:0")
+            # Use the device of the input tensor instead of hardcoded cuda:0
+            processed_hs = rearrange(pbr_hs, "b n_pbrs n l c -> (b n_pbrs n) l c").contiguous()
             result = self.process_single(attn, processed_hs, None, attention_mask, temb, token, False)
             results.append(result)
 
