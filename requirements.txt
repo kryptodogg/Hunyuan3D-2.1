@@ -27,15 +27,12 @@ imageio==2.36.0
 scikit-image==0.24.0
 rembg==2.0.65
 realesrgan==0.3.0
-tb_nightly==2.18.0a20240726
 basicsr==1.4.2
 
 # 3D Mesh Processing
 trimesh==4.4.7
-pymeshlab==2022.2.post3
-pygltflib==1.16.3
+pygltflib==1.15.6
 xatlas==0.0.9
-open3d==0.18.0
 
 # Configuration Management
 omegaconf==2.3.0
@@ -55,16 +52,7 @@ psutil==6.0.0
 # For ROCm, install cupy matching your ROCm version (e.g. cupy-rocm-6-0)
 cupy
 
-# Blender
-bpy>=4.0.0
-
-# ONNX Runtime
-onnxruntime==1.16.3
-torchmetrics==1.6.0
-
-pydantic==2.10.6
-
+# Optional but safe
 timm
 pythreejs
 torchdiffeq
-deepspeed
