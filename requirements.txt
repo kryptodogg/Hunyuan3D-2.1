@@ -8,7 +8,7 @@ pybind11==2.13.4
 # Core ML/Deep Learning
 # For AMD/ROCm, please install torch compatible with your ROCm version (e.g. nightly)
 # pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm6.2
-transformers==4.46.0
+transformers==4.46.1
 diffusers==0.30.0
 accelerate==1.1.1
 pytorch-lightning==1.9.5
@@ -37,7 +37,7 @@ xatlas==0.0.9
 # Configuration Management
 omegaconf==2.3.0
 pyyaml==6.0.2
-configargparse==1.7
+configargparse==1.7.1
 
 # Web Framework (for demo)
 gradio==5.33.0
