@@ -92,13 +92,38 @@ It takes 10 GB VRAM for shape generation, 21GB for texture generation and 29GB f
 Hunyuan3D 2.1 supports Macos, Windows, Linux. You may follow the next steps to use Hunyuan3D 2.1 via:
 
 ### Install Requirements
-We test our model with Python 3.10 and PyTorch 2.5.1+cu124.
+
+We recommend using `uv` for managing dependencies.
+
+For **AMD/ROCm** users:
 ```bash
-pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
-pip install -r requirements.txt
+# Install PyTorch for ROCm (example for ROCm 6.2 nightly)
+uv pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm6.2
+
+# Install other requirements
+uv pip install -r requirements.txt
+
+# Compile custom rasterizer
+cd hy3dpaint/custom_rasterizer
+uv pip install -e .
+cd ../..
+
+# Compile mesh painter
+cd hy3dpaint/DifferentiableRenderer
+bash compile_mesh_painter.sh
+cd ../..
+
+# Download Real-ESRGAN model
+wget https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth -P hy3dpaint/ckpt
+```
+
+For **Nvidia/CUDA** users:
+```bash
+uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+uv pip install -r requirements.txt
 
 cd hy3dpaint/custom_rasterizer
-pip install -e .
+uv pip install -e .
 cd ../..
 cd hy3dpaint/DifferentiableRenderer
 bash compile_mesh_painter.sh

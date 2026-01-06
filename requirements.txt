@@ -6,6 +6,8 @@ ninja==1.11.1.1
 pybind11==2.13.4
 
 # Core ML/Deep Learning
+# For AMD/ROCm, please install torch compatible with your ROCm version (e.g. nightly)
+# pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm6.2
 transformers==4.46.0
 diffusers==0.30.0
 accelerate==1.1.1
@@ -14,7 +16,7 @@ huggingface-hub==0.30.2
 safetensors==0.4.4
 
 # Scientific Computing
-numpy==1.24.4
+numpy>=1.26.0
 scipy==1.14.1
 einops==0.8.0
 pandas==2.2.2
@@ -30,10 +32,10 @@ basicsr==1.4.2
 
 # 3D Mesh Processing
 trimesh==4.4.7
-pymeshlab==2022.2.post3
+pymeshlab
 pygltflib==1.16.3
 xatlas==0.0.9
-open3d==0.18.0
+open3d
 
 # Configuration Management
 omegaconf==2.3.0
@@ -49,14 +51,15 @@ uvicorn==0.34.3
 tqdm==4.66.5
 psutil==6.0.0
 
-# GPU Computing (requires CUDA)
-cupy-cuda12x==13.4.1
+# GPU Computing (requires CUDA or ROCm)
+# For ROCm, install cupy matching your ROCm version (e.g. cupy-rocm-6-0)
+cupy
 
 # Blender
-bpy==4.0
+# bpy>=4.0.0 (User might need to use specific python version for bpy)
 
 # ONNX Runtime
-onnxruntime==1.16.3
+onnxruntime
 torchmetrics==1.6.0
 
 pydantic==2.10.6
@@ -65,4 +68,3 @@ timm
 pythreejs
 torchdiffeq
 deepspeed
-

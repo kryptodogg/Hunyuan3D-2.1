@@ -17,6 +17,8 @@ import torch
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CppExtension
 
 # build custom rasterizer
+# For ROCm support, ensure hipcc is available and torch is built with ROCm support.
+# PyTorch's CUDAExtension handles compilation with hipcc if torch.version.hip is detected.
 
 custom_rasterizer_module = CUDAExtension(
     "custom_rasterizer_kernel",

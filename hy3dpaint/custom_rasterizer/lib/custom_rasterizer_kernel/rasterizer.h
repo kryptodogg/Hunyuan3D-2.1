@@ -4,7 +4,14 @@
 #include <torch/extension.h>
 #include <vector>
 #include <ATen/ATen.h>
+
+#ifdef __HIP_PLATFORM_AMD__
+#include <ATen/hip/HIPContext.h>
+#define GET_CURRENT_STREAM at::hip::getCurrentHIPStream()
+#else
 #include <ATen/cuda/CUDAContext.h> // For CUDA context
+#define GET_CURRENT_STREAM at::cuda::getCurrentCUDAStream()
+#endif
 
 #define INT64 unsigned long long
 #define MAXINT 2147483647
