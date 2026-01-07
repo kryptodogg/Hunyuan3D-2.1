@@ -54,12 +54,11 @@ def create_glb_with_pbr_materials(obj_path, textures_dict, output_path):
     # 1. 加载OBJ文件
     mesh = trimesh.load(obj_path)
 
-    # 2. 先导出为临时GLB
-    temp_glb = "temp.glb"
-    mesh.export(temp_glb)
+    # 2. 先导出为临时GLB (Using in-memory processing to avoid disk IO and race conditions)
+    glb_bytes = mesh.export(file_type='glb')
 
     # 3. 加载GLB文件进行材质编辑
-    gltf = pygltflib.GLTF2().load(temp_glb)
+    gltf = pygltflib.GLTF2.load_from_bytes(glb_bytes)
 
     # 4. 准备纹理数据
     def image_to_data_uri(image_path):
