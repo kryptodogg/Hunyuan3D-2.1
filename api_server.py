@@ -28,9 +28,10 @@ from typing import Optional
 
 import torch
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
+from fastapi.concurrency import run_in_threadpool
 
 # Import from root-level modules
 from api_models import GenerationRequest, GenerationResponse, StatusResponse, HealthResponse
@@ -83,12 +84,16 @@ async def generate_3d_model(request: GenerationRequest):
     """
     logger.info("Worker generating...")
     
+    if worker is None or model_semaphore is None:
+        raise HTTPException(status_code=500, detail="Server not initialized correctly. Please run with 'python api_server.py'")
+
     # Convert Pydantic model to dict for compatibility
     params = request.dict()
     
     uid = uuid.uuid4()
     try:
-        file_path, uid = worker.generate(uid, params)
+        async with model_semaphore:
+            file_path, uid = await run_in_threadpool(worker.generate, uid, params)
         return FileResponse(file_path)
     except ValueError as e:
         traceback.print_exc()
