@@ -28,6 +28,7 @@ from typing import Optional
 
 import torch
 import uvicorn
+from starlette.concurrency import run_in_threadpool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
@@ -88,7 +89,7 @@ async def generate_3d_model(request: GenerationRequest):
     
     uid = uuid.uuid4()
     try:
-        file_path, uid = worker.generate(uid, params)
+        file_path, uid = await run_in_threadpool(worker.generate, uid, params)
         return FileResponse(file_path)
     except ValueError as e:
         traceback.print_exc()
