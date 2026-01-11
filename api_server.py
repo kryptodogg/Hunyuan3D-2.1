@@ -31,6 +31,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
+from fastapi.concurrency import run_in_threadpool
 
 # Import from root-level modules
 from api_models import GenerationRequest, GenerationResponse, StatusResponse, HealthResponse
@@ -87,32 +88,36 @@ async def generate_3d_model(request: GenerationRequest):
     params = request.dict()
     
     uid = uuid.uuid4()
-    try:
-        file_path, uid = worker.generate(uid, params)
-        return FileResponse(file_path)
-    except ValueError as e:
-        traceback.print_exc()
-        logger.error(f"Caught ValueError: {e}")
-        ret = {
-            "text": SERVER_ERROR_MSG,
-            "error_code": 1,
-        }
-        return JSONResponse(ret, status_code=404)
-    except torch.cuda.CudaError as e:
-        logger.error(f"Caught torch.cuda.CudaError: {e}")
-        ret = {
-            "text": SERVER_ERROR_MSG,
-            "error_code": 1,
-        }
-        return JSONResponse(ret, status_code=404)
-    except Exception as e:
-        logger.error(f"Caught Unknown Error: {e}")
-        traceback.print_exc()
-        ret = {
-            "text": SERVER_ERROR_MSG,
-            "error_code": 1,
-        }
-        return JSONResponse(ret, status_code=404)
+
+    # Use the semaphore to limit concurrency
+    async with model_semaphore:
+        try:
+            # Run the blocking generation in a thread pool to avoid blocking the event loop
+            file_path, uid = await run_in_threadpool(worker.generate, uid, params)
+            return FileResponse(file_path)
+        except ValueError as e:
+            traceback.print_exc()
+            logger.error(f"Caught ValueError: {e}")
+            ret = {
+                "text": SERVER_ERROR_MSG,
+                "error_code": 1,
+            }
+            return JSONResponse(ret, status_code=404)
+        except torch.cuda.CudaError as e:
+            logger.error(f"Caught torch.cuda.CudaError: {e}")
+            ret = {
+                "text": SERVER_ERROR_MSG,
+                "error_code": 1,
+            }
+            return JSONResponse(ret, status_code=404)
+        except Exception as e:
+            logger.error(f"Caught Unknown Error: {e}")
+            traceback.print_exc()
+            ret = {
+                "text": SERVER_ERROR_MSG,
+                "error_code": 1,
+            }
+            return JSONResponse(ret, status_code=404)
 
 
 @app.post("/send", response_model=GenerationResponse, tags=["generation"])
