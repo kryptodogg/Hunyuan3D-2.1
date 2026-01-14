@@ -31,6 +31,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
+from starlette.concurrency import run_in_threadpool
 
 # Import from root-level modules
 from api_models import GenerationRequest, GenerationResponse, StatusResponse, HealthResponse
@@ -88,7 +89,11 @@ async def generate_3d_model(request: GenerationRequest):
     
     uid = uuid.uuid4()
     try:
-        file_path, uid = worker.generate(uid, params)
+        if model_semaphore is None:
+            file_path, uid = await run_in_threadpool(worker.generate, uid, params)
+        else:
+            async with model_semaphore:
+                file_path, uid = await run_in_threadpool(worker.generate, uid, params)
         return FileResponse(file_path)
     except ValueError as e:
         traceback.print_exc()
