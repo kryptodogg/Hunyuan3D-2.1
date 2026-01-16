@@ -29,6 +29,7 @@ from typing import Optional
 import torch
 import uvicorn
 from fastapi import FastAPI
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 
@@ -70,6 +71,14 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def startup_event():
+    global model_semaphore
+    if model_semaphore is None:
+        logger.warning("Model semaphore not initialized, using default concurrency limit of 5")
+        model_semaphore = asyncio.Semaphore(5)
+
+
 @app.post("/generate", tags=["generation"])
 async def generate_3d_model(request: GenerationRequest):
     """
@@ -88,7 +97,10 @@ async def generate_3d_model(request: GenerationRequest):
     
     uid = uuid.uuid4()
     try:
-        file_path, uid = worker.generate(uid, params)
+        # Run generation in threadpool to avoid blocking event loop
+        # Use semaphore to limit concurrency
+        async with model_semaphore:
+            file_path, uid = await run_in_threadpool(worker.generate, uid, params)
         return FileResponse(file_path)
     except ValueError as e:
         traceback.print_exc()
