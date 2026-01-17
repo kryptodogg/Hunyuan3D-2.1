@@ -30,6 +30,7 @@ import torch
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, FileResponse
 
 # Import from root-level modules
@@ -70,6 +71,35 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def startup_event():
+    global worker, model_semaphore
+
+    # Initialize semaphore if missing
+    if model_semaphore is None:
+        limit_model_concurrency = int(os.environ.get("LIMIT_MODEL_CONCURRENCY", 1))
+        model_semaphore = asyncio.Semaphore(limit_model_concurrency)
+        logger.info(f"Initialized model semaphore with concurrency limit: {limit_model_concurrency}")
+
+    if worker is None:
+        # Default configuration if not provided via command line
+        model_path = os.environ.get("MODEL_PATH", 'tencent/Hunyuan3D-2.1')
+        device = os.environ.get("DEVICE", "cuda")
+        save_dir = os.environ.get("CACHE_PATH", './gradio_cache')
+
+        os.makedirs(save_dir, exist_ok=True)
+
+        worker = ModelWorker(
+            model_path=model_path,
+            subfolder='hunyuan3d-dit-v2-1',
+            device=device,
+            worker_id=worker_id,
+            model_semaphore=model_semaphore,
+            save_dir=save_dir
+        )
+        logger.info("Initialized worker in startup event")
+
+
 @app.post("/generate", tags=["generation"])
 async def generate_3d_model(request: GenerationRequest):
     """
@@ -88,7 +118,9 @@ async def generate_3d_model(request: GenerationRequest):
     
     uid = uuid.uuid4()
     try:
-        file_path, uid = worker.generate(uid, params)
+        # Offload blocking inference to threadpool to keep event loop responsive
+        async with model_semaphore:
+            file_path, uid = await run_in_threadpool(worker.generate, uid, params)
         return FileResponse(file_path)
     except ValueError as e:
         traceback.print_exc()
