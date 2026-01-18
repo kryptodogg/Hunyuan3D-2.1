@@ -29,6 +29,7 @@ from typing import Optional
 import torch
 import uvicorn
 from fastapi import FastAPI
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 
@@ -88,7 +89,10 @@ async def generate_3d_model(request: GenerationRequest):
     
     uid = uuid.uuid4()
     try:
-        file_path, uid = worker.generate(uid, params)
+        # Use global semaphore or default to 1 if not initialized
+        sem = model_semaphore if model_semaphore is not None else asyncio.Semaphore(1)
+        async with sem:
+            file_path, uid = await run_in_threadpool(worker.generate, uid, params)
         return FileResponse(file_path)
     except ValueError as e:
         traceback.print_exc()
